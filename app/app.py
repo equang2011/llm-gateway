@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.models import InvokeRequest, InvokeResponse
+from app.providers.openrouter import invoke_openrouter, normalize_openrouter_response
 
 app = FastAPI()
 
@@ -12,10 +13,9 @@ def health():
 
 @app.post("/invoke", response_model=InvokeResponse)
 def invoke(request: InvokeRequest) -> InvokeResponse:
-    # provider_result = mock_provider.invoke(request)
+    provider_result = invoke_openrouter(request)
 
-    return InvokeResponse(
-        model=request.model,
-        content=f"Gateway received: {request.messages[-1].content}",
-        finish_reason="stop",
+    return normalize_openrouter_response(
+        provider_result,
+        requested_model=request.model,
     )
