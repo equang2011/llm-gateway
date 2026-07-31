@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 
-from app.app import app
+import app.app as app_module
 
-client = TestClient(app)
+client = TestClient(app_module.app)
 
 
 def test_health_returns_ok():
@@ -11,22 +11,39 @@ def test_health_returns_ok():
     assert response.json() == {"status": "ok"}
 
 
-def test_invoke_returns_gateway_response():
-    payload = {
-        "model": "mock-1",
-        "messages": [
-            {
-                "role": "user",
-                "content": "Explain indemnification",
-            }
-        ],
-    }
+def test_invoke_returns_gateway_response(monkeypatch):
+    def fake_invoke_openrouter(request):
+        return {
+            "choices": [
+                {
+                    "message": {"content": "Mock provider response"},
+                    "finish_reason": "stop",
+                }
+            ]
+        }
 
-    response = client.post("/invoke", json=payload)
+    monkeypatch.setattr(
+        app_module,
+        "invoke_openrouter",
+        fake_invoke_openrouter,
+    )
+
+    response = client.post(
+        "/invoke",
+        json={
+            "model": "mock-1",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello",
+                }
+            ],
+        },
+    )
 
     assert response.status_code == 200
     assert response.json() == {
         "model": "mock-1",
-        "content": "Gateway received: Explain indemnification",
+        "content": "Mock provider response",
         "finish_reason": "stop",
     }

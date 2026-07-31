@@ -1,9 +1,7 @@
-from app.models import InvokeRequest, InvokeResponse
-from app.settings import Settings
-
 import httpx
 
-from typing import Any
+from app.models import InvokeRequest, InvokeResponse
+from app.settings import Settings
 
 
 def build_openrouter_payload(request: InvokeRequest) -> dict:
