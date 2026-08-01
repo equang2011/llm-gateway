@@ -1,8 +1,19 @@
+import logging
+import time
+
 import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 
 from app.models import InvokeRequest, InvokeResponse
+from app.observability import log_invocation
 from app.providers.openrouter import invoke_openrouter, normalize_openrouter_response
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+
 
 app = FastAPI()
 
@@ -15,10 +26,19 @@ def health():
 @app.post("/invoke", response_model=InvokeResponse)
 def invoke(request: InvokeRequest) -> InvokeResponse:
 
+    start = time.perf_counter()
+    outcome = "unexpected_error"
+    gateway_status = 500
+
     try:
         provider_result = invoke_openrouter(request)
 
+        outcome = "success"
+        gateway_status = 200
+
     except httpx.TimeoutException as err:
+        outcome = "timeout"
+        gateway_status = 504
         raise HTTPException(
             status_code=504,
             detail={
@@ -29,6 +49,8 @@ def invoke(request: InvokeRequest) -> InvokeResponse:
             },
         ) from err
     except httpx.HTTPStatusError as err:
+        outcome = "status_error"
+        gateway_status = 502
         raise HTTPException(
             status_code=502,
             detail={
@@ -39,7 +61,20 @@ def invoke(request: InvokeRequest) -> InvokeResponse:
             },
         ) from err
 
+    finally:
+        elapsed_time = (time.perf_counter() - start) * 1000
+
+        log_invocation(
+            model=request.model,
+            outcome=outcome,
+            gateway_status=gateway_status,
+            elapsed_ms=elapsed_time,
+        )
+
     return normalize_openrouter_response(
         provider_result,
         requested_model=request.model,
     )
+
+
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
