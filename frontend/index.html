@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LLM Gateway</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>LLM Gateway</h1>
+
+    <form id="invoke-form">
+      <label for="model">Model</label>
+      <select id="model" name="model">
+        <option value="deepseek/deepseek-v4-flash">deepseek-v4-flash</option>
+        <option value="qwen/qwen3.7-flash">qwen-3.7-flash</option>
+        <option value="xiaomi/mimo-v2.5">mimo-v2.5</option>
+        <option value="nvidia/nemotron-3-ultra-550b-a55b:free">nemotron-3-ultra-free</option>
+        <option value="inclusionai/ling-3.0-flash:free">ling-3.0-flash-free</option>
+      </select>
+
+      <label for="message">Message</label>
+      <textarea
+        id="message"
+        name="message"
+        rows="6"
+        placeholder="Type a message..."
+        required
+      ></textarea>
+
+      <button type="submit" id="submit-button">Send</button>
+    </form>
+
+    <p id="status" class="status" hidden></p>
+
+    <section id="response-panel" class="response-panel" hidden>
+      <h2>Response</h2>
+      <pre id="response-content"></pre>
+      <p id="response-meta" class="response-meta"></p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

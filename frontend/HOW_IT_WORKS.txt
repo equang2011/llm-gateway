@@ -1,0 +1,68 @@
+FRONTEND OVERVIEW
+=================
+
+Three files, no build step, no framework.
+
+index.html
+----------
+Static page. Contains:
+  - a <select id="model"> with a few hardcoded OpenRouter model IDs
+  - a <textarea id="message"> for the user's message
+  - a <button id="submit-button"> inside a <form id="invoke-form">
+  - a hidden <p id="status"> used for loading/error text
+  - a hidden <section id="response-panel"> that holds the reply
+
+Nothing here talks to the API directly. It just defines the elements
+app.js will read from and write to.
+
+styles.css
+----------
+Plain CSS, no framework. Layout is a single centered column
+(.container, max-width 640px). Handles three visual states:
+  - normal form
+  - .status.error (red text) for failed requests
+  - button:disabled (dimmed) while a request is in flight
+
+app.js
+------
+Split into three parts, top to bottom:
+
+1. Request building
+   buildInvokeRequest(model, message) -> plain object matching the
+   gateway's contract:
+     { "model": ..., "messages": [{ "role": "user", "content": ... }] }
+
+2. API call
+   callInvoke(requestBody) -> POSTs JSON to GATEWAY_URL ("/invoke"),
+   throws an Error if the response is not ok, otherwise returns the
+   parsed JSON (an InvokeResponse: model, content, finish_reason).
+
+3. UI wiring
+   Grabs all the DOM elements by id, then listens for the form's
+   "submit" event:
+     - reads model + message from the inputs
+     - disables the button and shows "Waiting for response..."
+     - calls buildInvokeRequest -> callInvoke
+     - on success: shows the response panel with content + meta line
+     - on failure: shows the error message in the status line
+     - always re-enables the button at the end
+
+HOW A REQUEST FLOWS
+--------------------
+user types message, picks model, clicks Send
+  -> submit event fires
+  -> buildInvokeRequest() builds the JSON body
+  -> callInvoke() POSTs it to /invoke
+  -> response shown in #response-panel, or error shown in #status
+
+NOT WIRED UP YET
+-----------------
+GATEWAY_URL is a relative path ("/invoke"), so this only works if the
+frontend is served from the same origin as the FastAPI app (e.g. via
+StaticFiles mounted in app.py). That mount does not exist yet -
+opening index.html directly as a file will fail to reach the API.
+
+NOT INCLUDED (BY DESIGN)
+--------------------------
+No chat history, no streaming, no authentication, no React, no build
+step. Single request in, single response out.
