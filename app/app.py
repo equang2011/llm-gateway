@@ -2,9 +2,10 @@ import logging
 import time
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 
+from app.dependencies import require_gateway_key
 from app.models import InvokeRequest, InvokeResponse
 from app.observability import log_invocation
 from app.providers.openrouter import invoke_openrouter, normalize_openrouter_response
@@ -24,7 +25,10 @@ def health():
 
 
 @app.post("/invoke", response_model=InvokeResponse)
-def invoke(request: InvokeRequest) -> InvokeResponse:
+def invoke(
+    request: InvokeRequest,
+    _: None = Depends(require_gateway_key),
+    ) -> InvokeResponse:
 
     start = time.perf_counter()
     outcome = "unexpected_error"
