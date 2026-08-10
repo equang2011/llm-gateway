@@ -1,7 +1,7 @@
 .PHONY: run check
 
 run:
-	uvicorn app.main:app --reload
+	uvicorn app.app:app --reload
 
 check:
 	ruff format --check .
