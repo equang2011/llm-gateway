@@ -2,7 +2,7 @@ import logging
 import time
 
 import httpx
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
 from app.dependencies import require_gateway_key
@@ -28,7 +28,7 @@ def health():
 def invoke(
     request: InvokeRequest,
     _: None = Depends(require_gateway_key),
-    ) -> InvokeResponse:
+) -> InvokeResponse:
 
     start = time.perf_counter()
     outcome = "unexpected_error"

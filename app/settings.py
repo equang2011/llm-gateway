@@ -7,5 +7,3 @@ class Settings(BaseSettings):
 
     openrouter_api_key: SecretStr
     gateway_api_key: SecretStr
-
-    

@@ -65,6 +65,8 @@ def test_invoke(monkeypatch):
         }
 
     monkeypatch.setattr(app_module, "invoke_openrouter", fake_invoke_openrouter)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
+    monkeypatch.setenv("GATEWAY_API_KEY", "test-gateway-key")
 
     response = client.post(
         "/invoke",
@@ -76,6 +78,9 @@ def test_invoke(monkeypatch):
                     "content": "Hello",
                 }
             ],
+        },
+        headers={
+            "Authorization": "Bearer test-gateway-key",
         },
     )
 
@@ -98,6 +103,8 @@ def test_invoke_returns_502_when_provider_errors(monkeypatch):
         )
 
     monkeypatch.setattr(app_module, "invoke_openrouter", fake_openrouter_provider)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
+    monkeypatch.setenv("GATEWAY_API_KEY", "test-gateway-key")
 
     response = client.post(
         "/invoke",
@@ -109,6 +116,9 @@ def test_invoke_returns_502_when_provider_errors(monkeypatch):
                     "content": "Hello",
                 }
             ],
+        },
+        headers={
+            "Authorization": "Bearer test-gateway-key",
         },
     )
 
@@ -130,6 +140,39 @@ def test_invoke_returns_504_when_provider_times_out(monkeypatch):
         )
 
     monkeypatch.setattr(app_module, "invoke_openrouter", fake_openrouter_timeout)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
+    monkeypatch.setenv("GATEWAY_API_KEY", "test-gateway-key")
+
+    response = client.post(
+        "/invoke",
+        json={
+            "model": "mock-1",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello",
+                }
+            ],
+        },
+        headers={
+            "Authorization": "Bearer test-gateway-key",
+        },
+    )
+
+    assert response.status_code == 504
+    assert response.json() == {
+        "detail": {
+            "error": {
+                "code": "provider_timeout",
+                "message": "The upstream model provider timed out.",
+            }
+        }
+    }
+
+
+def test_invoke_with_missing_authorization_header(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
+    monkeypatch.setenv("GATEWAY_API_KEY", "test-gateway-key")
 
     response = client.post(
         "/invoke",
@@ -144,12 +187,42 @@ def test_invoke_returns_504_when_provider_times_out(monkeypatch):
         },
     )
 
-    assert response.status_code == 504
+    assert response.status_code == 401
     assert response.json() == {
         "detail": {
             "error": {
-                "code": "provider_timeout",
-                "message": "The upstream model provider timed out.",
+                "code": "unauthorized",
+                "message": "Missing gateway credentials.",
+            }
+        }
+    }
+
+
+def test_invoke_with_wrong_bearer_token(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
+    monkeypatch.setenv("GATEWAY_API_KEY", "test-gateway-key")
+
+    response = client.post(
+        "/invoke",
+        json={
+            "model": "mock-1",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello",
+                }
+            ],
+        },
+        headers={
+            "Authorization": "Bearer wrong-gateway-key",
+        },
+    )
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": {
+            "error": {
+                "code": "unauthorized",
+                "message": "Invalid gateway credentials.",
             }
         }
     }
