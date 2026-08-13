@@ -245,7 +245,7 @@ function renderHistory() {
 
     const modelLine = document.createElement("p");
     modelLine.className = "history-meta";
-    modelLine.textContent = `model: ${entry.model}`;
+    modelLine.textContent = `model: ${entry.model}${formatLatency(entry.latencyMs)}`;
     body.appendChild(modelLine);
 
     entry.messages.forEach((m) => {
@@ -298,6 +298,10 @@ function renderHistory() {
   });
 }
 
+function formatLatency(latencyMs) {
+  return typeof latencyMs === "number" ? ` · ${Math.round(latencyMs)} ms` : "";
+}
+
 function renderCurrentResponse() {
   if (!current) {
     responseContent.textContent = "";
@@ -305,7 +309,9 @@ function renderCurrentResponse() {
     return;
   }
   responseContent.textContent = current.response.content;
-  responseMeta.textContent = `model: ${current.response.model} · finish_reason: ${current.response.finish_reason}`;
+  responseMeta.textContent =
+    `model: ${current.response.model} · finish_reason: ${current.response.finish_reason}` +
+    formatLatency(current.latencyMs);
 }
 
 function showResultsColumnIfNeeded() {
@@ -401,9 +407,11 @@ form.addEventListener("submit", async (event) => {
   }
 
   setLoading(true);
+  const requestStart = performance.now();
 
   try {
     const invokeResponse = await callInvoke(requestBody, gatewayKey);
+    const latencyMs = performance.now() - requestStart;
 
     if (current) {
       history.unshift(current);
@@ -414,6 +422,7 @@ form.addEventListener("submit", async (event) => {
       messages: requestBody.messages,
       response: invokeResponse,
       timestamp: Date.now(),
+      latencyMs,
     };
     persistResults();
     renderHistory();
