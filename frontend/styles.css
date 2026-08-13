@@ -74,15 +74,16 @@ button:disabled {
 }
 
 .response-panel {
-  margin-top: 1.5rem;
+  margin-top: 0;
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1rem;
 }
 
-.response-panel h2 {
+.response-panel h2,
+.history-section h2 {
   font-size: 0.9rem;
-  margin: 0 0 0.5rem;
+  margin: 0;
 }
 
 #response-content {
@@ -96,4 +97,218 @@ button:disabled {
   margin: 0.75rem 0 0;
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: -1rem;
+  margin-bottom: 1.5rem;
+}
+
+.key-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.key-panel input {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+input[type="text"],
+input[type="password"] {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.msg-block {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.msg-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.msg-role-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.msg-role {
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.msg-remove {
+  margin: 0;
+  padding: 0.1rem 0.5rem;
+  background: transparent;
+  color: var(--error);
+  border: 1px solid var(--border);
+  line-height: 1.2;
+}
+
+.msg-content {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.sandbox-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.sandbox-actions button {
+  margin-top: 0;
+  flex: 1;
+}
+
+.button-secondary {
+  background: #fff;
+  color: #111;
+}
+
+/* ---- Two-column results layout ------------------------------------------ */
+/* Single centered column until a result exists (matches the pre-history
+   look). Once .has-results is added, .page becomes an equal-width grid and
+   .container's own centering rule is overridden by the grid. */
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.page.has-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  max-width: 1100px;
+  align-items: start;
+}
+
+.page.has-results > .container {
+  max-width: none;
+  margin: 0;
+}
+
+.results-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.icon-button-group {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.icon-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.3rem;
+  margin: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.icon-button:hover {
+  color: #111;
+  border-color: #888;
+}
+
+/* ---- History entries ------------------------------------------------------ */
+
+.history-section {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.history-entry {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.history-entry summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.history-entry-body {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.history-meta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.history-msg {
+  margin: 0;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.history-output {
+  border-top: 1px dashed var(--border);
+  padding-top: 0.4rem;
+}
+
+.history-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
 }

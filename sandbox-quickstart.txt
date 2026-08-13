@@ -1,0 +1,85 @@
+Prompt Sandbox — Quickstart
+============================
+
+WHAT IT IS
+A local tool at /sandbox.html for quickly iterating on prompts against your
+real gateway. Separate from the public demo (index.html) — nothing you do
+here affects that page.
+
+RUNNING IT
+1. Start the app: make run  (or: uvicorn app.app:app --reload)
+2. Open http://127.0.0.1:8000/sandbox.html
+   (swap the host/port for your Railway URL to test the hosted version)
+3. Paste your GATEWAY_API_KEY into the "Gateway API Key" field.
+   - Saved to this browser's localStorage only — not in any file, not sent
+     anywhere except as the Authorization header on your own requests.
+   - Persists across reloads. Clear it via browser devtools if needed
+     (Application tab -> Local Storage -> delete llmGatewaySandboxKey).
+
+USING IT
+- Model: choose "Default (deepseek flash v4 0731)" to use the deepseek
+  model from app/model_catalog.py, or "Custom" to type any provider model
+  ID (e.g. qwen/qwen3.7-flash) — same raw IDs as the model dropdown on the
+  main demo page.
+- System prompt: the first box, always present.
+- + Add message: appends an ordered user/assistant turn (dropdown to flip
+  its role). Capped at 10 messages total, including the system prompt.
+- × removes a message. Empty boxes are silently dropped when you hit Run —
+  they don't get sent to the provider.
+- Run: sends the request. Status line shows "Request sent — waiting on
+  provider..." while in flight.
+- On success: the response content, model, and finish_reason are shown.
+- On failure: the status line shows the actual error code + message from
+  your gateway (e.g. "unauthorized: Missing gateway credentials." or
+  "provider_error: The upstream model provider returned an error.").
+  These come straight from /invoke's error envelope, so they mean the same
+  thing here as they do everywhere else in the app.
+
+FILES INVOLVED
+frontend/sandbox.html — page structure
+frontend/sandbox.js — all logic (state, rendering, fetch call)
+No backend files were touched. It calls the same /invoke endpoint the main
+demo and your other apps use.
+
+----------------------------------------------------------------------
+CRITICAL CONCEPTS TO REMEMBER
+
+1. Why zero backend changes were needed.
+   InvokeRequest.messages is already `list[Message]`, and Message.role is
+   Literal["system", "user", "assistant"]. The API was already shaped as
+   "an ordered list of role/content turns" — which is exactly what a
+   multi-turn prompt sandbox needs. The sandbox just builds that list in
+   the browser instead of you building it by hand with curl. Worth
+   spending real time in app/models.py and app/app.py later to see exactly
+   how that request flows through to OpenRouter — you flagged this as a
+   gap in your own understanding, and it's a fair one to close before the
+   model-alias slice, since that slice changes what "model" means in this
+   same request.
+
+2. Why the API key isn't hardcoded anywhere.
+   It lives only in your browser's localStorage, scoped to whatever origin
+   you loaded sandbox.html from. It is never written into sandbox.js or
+   any file in the repo. This matters because anything committed to git or
+   shipped in a JS file is effectively public, even on a "private" tool —
+   browser source is always readable. The rule from your roadmap (no
+   shared secret in public browser JS) still applies to this page; the
+   difference is that YOU are typing the secret into YOUR OWN browser
+   session, not the app embedding it for anyone who loads the page.
+
+3. What the error messages are actually telling you.
+   Every error you'll see in the sandbox is a passthrough of the same
+   normalized envelope /invoke always returns:
+     { "detail": { "error": { "code": "...", "message": "..." } } }
+   unauthorized -> your gateway key is missing/wrong (sandbox-side problem)
+   provider_error / provider_timeout -> OpenRouter-side problem, not yours
+   If you ever see a raw, non-JSON error or an unhandled 500, that's a bug
+   in the gateway itself (e.g. an unnormalized exception) — worth noting,
+   not just clicking past.
+
+4. This tool is intentionally not "resume code."
+   It's fast, mostly generated, and that's fine — it's a productivity tool
+   for iterating on your actual product's prompts, not part of the gateway
+   you're building to demonstrate backend skill. Keep that distinction
+   conscious: don't spend learning time here that's better spent on the
+   model-alias / request-ID / multi-client-key slices in ROADMAP.md and
+   context-8-12-26.txt.

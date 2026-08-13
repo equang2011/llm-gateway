@@ -4,6 +4,7 @@ import time
 import httpx
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
 
 from app.dependencies import require_gateway_key
 from app.models import InvokeRequest, InvokeResponse
@@ -36,6 +37,10 @@ def invoke(
 
     try:
         provider_result = invoke_openrouter(request)
+        response = normalize_openrouter_response(
+            provider_result,
+            requested_model=request.model,
+        )
 
         outcome = "success"
         gateway_status = 200
@@ -64,6 +69,18 @@ def invoke(
                 }
             },
         ) from err
+    except ValidationError as err:
+        outcome = "invalid_provider_response"
+        gateway_status = 502
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "error": {
+                    "code": "provider_error",
+                    "message": "The upstream model provider returned an unexpected response.",
+                }
+            },
+        ) from err
 
     finally:
         elapsed_time = (time.perf_counter() - start) * 1000
@@ -75,10 +92,7 @@ def invoke(
             elapsed_ms=elapsed_time,
         )
 
-    return normalize_openrouter_response(
-        provider_result,
-        requested_model=request.model,
-    )
+    return response
 
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

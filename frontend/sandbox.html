@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LLM Gateway — Sandbox</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page" id="page">
+    <main class="container">
+      <h1>Prompt Sandbox</h1>
+      <p class="hint">
+        Local testing tool for iterating on prompts. Not part of the public
+        demo — your gateway key stays in this browser's local storage only.
+      </p>
+
+      <section class="key-panel">
+        <label for="gateway-key">Gateway API Key</label>
+        <input
+          type="password"
+          id="gateway-key"
+          placeholder="Bearer token (saved only in this browser)"
+          autocomplete="off"
+        />
+      </section>
+
+      <form id="sandbox-form">
+        <label for="model-mode">Model</label>
+        <select id="model-mode">
+          <option value="default">Default (deepseek flash v4 0731)</option>
+          <option value="custom">Custom</option>
+        </select>
+        <input
+          type="text"
+          id="model-custom"
+          placeholder="e.g. qwen/qwen3.7-flash"
+          hidden
+        />
+
+        <div id="message-list"></div>
+
+        <div class="sandbox-actions">
+          <button type="button" id="add-message-button" class="button-secondary">
+            + Add message
+          </button>
+          <button type="submit" id="submit-button">Run</button>
+        </div>
+      </form>
+
+      <p id="status" class="status" hidden></p>
+    </main>
+
+    <aside class="results-column" id="results-column" hidden>
+      <section class="history-section">
+        <div class="panel-header">
+          <h2>History</h2>
+          <button type="button" id="clear-history-button" class="link-button">
+            Clear
+          </button>
+        </div>
+        <p class="hint">Last 4 previous runs. Click to expand.</p>
+        <div id="history-list"></div>
+      </section>
+
+      <section class="response-panel" id="response-panel">
+        <div class="panel-header">
+          <h2>Response</h2>
+          <div class="icon-button-group">
+            <button
+              type="button"
+              class="icon-button"
+              id="copy-response-button"
+              title="Copy response"
+              aria-label="Copy response"
+            ></button>
+            <button
+              type="button"
+              class="icon-button"
+              id="export-response-button"
+              title="Export as .txt"
+              aria-label="Export as .txt"
+            ></button>
+          </div>
+        </div>
+        <pre id="response-content"></pre>
+        <p id="response-meta" class="response-meta"></p>
+      </section>
+    </aside>
+  </div>
+
+  <script src="sandbox.js"></script>
+</body>
+</html>
