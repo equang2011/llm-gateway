@@ -77,7 +77,9 @@ def invoke(
             detail={
                 "error": {
                     "code": "provider_error",
-                    "message": "The upstream model provider returned an unexpected response.",
+                    "message": (
+                        "The upstream model provider returned an unexpected response."
+                    ),
                 }
             },
         ) from err
