@@ -16,3 +16,7 @@ __pycache__/
 
 NEXT.md
 notes/
+conversations/
+context-*.txt
+*.jpg
+*.png
