@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from app.models import InvokeRequest, InvokeResponse
 from app.settings import Settings
 
-settings = Settings()
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +25,7 @@ def build_openrouter_payload(request: InvokeRequest) -> dict:
 
 
 def invoke_openrouter(request: InvokeRequest) -> dict:
-
+    settings = Settings()
     payload = build_openrouter_payload(request)
 
     headers = {
