@@ -1,10 +1,12 @@
 import logging
 
 import httpx
+from pydantic import ValidationError
 
 from app.models import InvokeRequest, InvokeResponse
 from app.settings import Settings
 
+settings = Settings()
 logger = logging.getLogger(__name__)
 
 
@@ -25,7 +27,6 @@ def build_openrouter_payload(request: InvokeRequest) -> dict:
 
 def invoke_openrouter(request: InvokeRequest) -> dict:
 
-    settings = Settings()
     payload = build_openrouter_payload(request)
 
     headers = {
@@ -54,10 +55,29 @@ def normalize_openrouter_response(
     result: dict,
     requested_model: str,
 ) -> InvokeResponse:
-    choice = result["choices"][0]
 
-    return InvokeResponse(
-        model=requested_model,
-        content=choice["message"]["content"],
-        finish_reason=choice["finish_reason"],
-    )
+    try:
+        choices = result["choices"][0]
+
+        return InvokeResponse(
+            model=requested_model,
+            content=choices["message"]["content"],
+            finish_reason=choices["finish_reason"],
+        )
+
+    except (KeyError, ValidationError, IndexError):
+        choice = result.get("choices") or []
+        first = choice[0] if choice and isinstance(choice[0], dict) else {}
+        message = first.get("message")
+        message_keys = list(message.keys()) if isinstance(message, dict) else None
+
+        logger.warning(
+            "invalid_provider_response keys=%s choices_count=%s "
+            "choice_keys=%s message_keys=%s finish_reason=%s",
+            list(result.keys()),
+            len(choice),
+            list(first.keys()),
+            message_keys,
+            first.get("finish_reason"),
+        )
+        raise
