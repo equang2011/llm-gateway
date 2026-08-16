@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
-
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -30,6 +30,13 @@ def invoke(
     request: InvokeRequest,
     _: None = Depends(require_gateway_key),
 ) -> InvokeResponse:
+
+    logger.info(
+        "invoke_started model=%s message_count=%s input_chars=%s",
+        request.model,
+        len(request.messages),
+        sum(len(m.content) for m in request.messages),
+    )
 
     start = time.perf_counter()
     outcome = "unexpected_error"
