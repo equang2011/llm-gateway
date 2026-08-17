@@ -40,9 +40,24 @@
 
         <div id="message-list"></div>
 
+        <details class="variables-panel" open>
+          <summary>Variables</summary>
+
+          <p class="variables-note">
+            Detected from the messages above. Values are substituted at run
+            time; the templates themselves are never modified, so you can rerun
+            with new values. Kept in memory for this page only.
+          </p>
+
+          <div class="variables-fields" id="variables-fields"></div>
+        </details>
+
         <div class="sandbox-actions">
           <button type="button" id="add-message-button" class="button-secondary">
             + Add message
+          </button>
+          <button type="button" id="preview-button" class="button-secondary">
+            Preview
           </button>
           <button type="submit" id="submit-button">Run</button>
         </div>

@@ -63,6 +63,7 @@ function renderMessages() {
       removeButton.addEventListener("click", () => {
         messages.splice(index, 1);
         renderMessages();
+        refreshVariablesPanel();
       });
       header.appendChild(removeButton);
     }
@@ -77,6 +78,7 @@ function renderMessages() {
     textarea.value = msg.content;
     textarea.addEventListener("input", (event) => {
       messages[index].content = event.target.value;
+      refreshVariablesPanel();
     });
     block.appendChild(textarea);
 
@@ -90,16 +92,115 @@ addMessageButton.addEventListener("click", () => {
   if (messages.length >= MAX_MESSAGES) return;
   messages.push({ role: nextDefaultRole(messages.length), content: "" });
   renderMessages();
+  refreshVariablesPanel();
 });
+
+// ---- Prompt variables ------------------------------------------------------
+// Everything in this section is pure (no DOM access, no module state) so it can
+// be verified directly. The sandbox is deliberately ignorant of what any
+// variable means — it only detects `{simple_identifier}` placeholders, collects
+// text for them, and substitutes that text literally.
+
+// A fresh regex per call on purpose: /g patterns carry lastIndex between uses,
+// and sharing one instance across .replace() and .exec() loops silently skips
+// matches.
+//
+// The {{ }} branch is listed FIRST deliberately. Scanning runs left to right,
+// so in a literal "{{topic}}" the opening "{{" is consumed before the
+// placeholder branch can treat it as a variable — Python-style escaped braces
+// in prompts survive untouched.
+//
+// The identifier pattern is intentionally strict: {user.name}, {foo-bar},
+// {hello world} and {"foo": "bar"} all fail to match and are left as literal
+// text rather than being treated as variables or as errors.
+function placeholderScanner() {
+  return /(\{\{|\}\})|\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+}
+
+// Unique variable names across all message templates, in first-appearance
+// order. Callers pass the templates in, so this never reads the DOM.
+function discoverVariables(messageList) {
+  const names = [];
+  const seen = new Set();
+
+  messageList.forEach((message) => {
+    const scanner = placeholderScanner();
+    let match;
+    while ((match = scanner.exec(message.content)) !== null) {
+      const name = match[2];
+      if (name !== undefined && !seen.has(name)) {
+        seen.add(name);
+        names.push(name);
+      }
+    }
+  });
+
+  return names;
+}
+
+// Single-pass substitution over the original template. Values are supplied by
+// a callback, which means (a) they are never rescanned, so a value containing
+// "{topic}" stays literal, and (b) "$&"-style sequences inside pasted JSON are
+// inserted as-is rather than interpreted as replacement patterns.
+//
+// `values` is a Map, not a plain object, on purpose. Variable names are
+// arbitrary developer input, and a template containing {__proto__},
+// {constructor} or {toString} would resolve against Object.prototype on a plain
+// object and splice a function or "[object Object]" into the prompt.
+//
+// A placeholder with no entry in `values` is an internal bug, not a blank
+// value: callers derive `values` from discoverVariables(), so every detected
+// name must be present. Throwing beats silently shipping a raw {placeholder}
+// to the provider.
+function renderTemplate(template, values) {
+  return template.replace(placeholderScanner(), (match, doubled, name) => {
+    if (doubled !== undefined) return match;
+    if (!values.has(name)) {
+      throw new Error(`Internal error: no value entry for {${name}}.`);
+    }
+    return values.get(name);
+  });
+}
+
+// Renders every message against the same values, dropping any that come out
+// empty. Rendering happens before trimming so a message consisting only of a
+// blank variable correctly drops out.
+function renderAllMessages(messageList, values) {
+  return messageList
+    .map((message) => ({
+      role: message.role,
+      content: renderTemplate(message.content, values).trim(),
+    }))
+    .filter((message) => message.content.length > 0);
+}
 
 // ---- Request building ------------------------------------------------------
 
-function buildInvokeRequest(model) {
-  const nonEmpty = messages
-    .map((m) => ({ role: m.role, content: m.content.trim() }))
-    .filter((m) => m.content.length > 0);
+// In-memory only, for this page session. Deliberately NOT persisted: values may
+// hold curricula, contracts, learner context or other proprietary text. Keyed
+// by variable name; entries survive a variable disappearing from the panel so
+// switching prompts back and forth does not lose work.
+const variableValues = new Map();
 
-  return { model, messages: nonEmpty };
+// One entry per currently-referenced variable, defaulting to "" for names the
+// developer has not filled in yet.
+function readVariableValues(names) {
+  const values = new Map();
+  names.forEach((name) => {
+    values.set(name, variableValues.get(name) ?? "");
+  });
+  return values;
+}
+
+// The single source of truth for "what the gateway will receive". Both the
+// preview and the request payload go through this, so they cannot diverge.
+function renderedMessages() {
+  const names = discoverVariables(messages);
+  return renderAllMessages(messages, readVariableValues(names));
+}
+
+function buildInvokeRequest(model) {
+  return { model, messages: renderedMessages() };
 }
 
 // ---- API call ----------------------------------------------------------
@@ -148,12 +249,24 @@ function loadJSON(key, fallback) {
 let history = loadJSON(HISTORY_STORAGE_NAME, []);
 let current = loadJSON(CURRENT_STORAGE_NAME, null);
 
+// History holds RENDERED messages, so substituted variable values (curricula,
+// contracts, learner context) land in localStorage. That is pre-existing
+// behaviour, kept because history is only useful if it shows what was actually
+// sent — but it does mean "Clear" is the way to purge injected data.
+//
+// A large pasted value can also exceed the ~5MB quota. Failing to persist must
+// not break a run that already succeeded, so quota errors are swallowed and the
+// in-memory results stay intact.
 function persistResults() {
-  localStorage.setItem(HISTORY_STORAGE_NAME, JSON.stringify(history));
-  if (current) {
-    localStorage.setItem(CURRENT_STORAGE_NAME, JSON.stringify(current));
-  } else {
-    localStorage.removeItem(CURRENT_STORAGE_NAME);
+  try {
+    localStorage.setItem(HISTORY_STORAGE_NAME, JSON.stringify(history));
+    if (current) {
+      localStorage.setItem(CURRENT_STORAGE_NAME, JSON.stringify(current));
+    } else {
+      localStorage.removeItem(CURRENT_STORAGE_NAME);
+    }
+  } catch {
+    // Most likely QuotaExceededError from a large rendered prompt.
   }
 }
 
@@ -213,6 +326,7 @@ function loadEntryIntoForm(entry) {
   }
 
   renderMessages();
+  refreshVariablesPanel();
   document
     .getElementById("sandbox-form")
     .scrollIntoView({ behavior: "smooth", block: "start" });
@@ -336,6 +450,8 @@ const responseMeta = document.getElementById("response-meta");
 const copyResponseButton = document.getElementById("copy-response-button");
 const exportResponseButton = document.getElementById("export-response-button");
 const clearHistoryButton = document.getElementById("clear-history-button");
+const previewButton = document.getElementById("preview-button");
+const variablesFieldsEl = document.getElementById("variables-fields");
 
 copyResponseButton.innerHTML = COPY_ICON_SVG;
 exportResponseButton.innerHTML = EXPORT_ICON_SVG;
@@ -386,6 +502,115 @@ function showError(message) {
   statusEl.classList.add("error");
 }
 
+// ---- Dynamic variables panel -----------------------------------------------
+
+// Tracks which field set is currently on screen so the panel is only rebuilt
+// when the discovered names actually change. Without this, every keystroke in a
+// message textarea would tear down and recreate every variable field.
+let renderedVariableKey = null;
+
+function buildVariableField(name) {
+  const field = document.createElement("div");
+  field.className = "var-field";
+
+  const label = document.createElement("label");
+  const fieldId = `var-${name}`;
+  label.setAttribute("for", fieldId);
+  // Literal placeholder, so there is never ambiguity about which variable a
+  // field populates. No name-prettifying heuristics.
+  label.textContent = `{${name}}`;
+  field.appendChild(label);
+
+  const textarea = document.createElement("textarea");
+  textarea.id = fieldId;
+  textarea.rows = 3;
+  textarea.value = variableValues.get(name) ?? "";
+  textarea.addEventListener("input", (event) => {
+    variableValues.set(name, event.target.value);
+  });
+  field.appendChild(textarea);
+
+  return field;
+}
+
+function refreshVariablesPanel() {
+  const names = discoverVariables(messages);
+
+  // A space cannot appear inside an identifier, so it is a safe joiner.
+  const key = names.join(" ");
+  if (key === renderedVariableKey) return;
+  renderedVariableKey = key;
+
+  variablesFieldsEl.replaceChildren();
+
+  // Every discovered name gets an entry immediately, so renderTemplate's
+  // missing-entry guard only ever fires on a genuine bug.
+  names.forEach((name) => {
+    if (!variableValues.has(name)) variableValues.set(name, "");
+  });
+
+  if (names.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "variables-empty";
+    empty.textContent = "No variables detected in the current messages.";
+    variablesFieldsEl.appendChild(empty);
+    return;
+  }
+
+  names.forEach((name) => {
+    variablesFieldsEl.appendChild(buildVariableField(name));
+  });
+}
+
+// Opens the fully rendered messages in a separate window so the main sandbox
+// stays uncluttered. Content is set via textContent, never innerHTML.
+function openPreviewWindow() {
+  let rendered;
+  try {
+    rendered = renderedMessages();
+  } catch (err) {
+    showError(err.message);
+    return;
+  }
+
+  if (rendered.length === 0) {
+    showError("Nothing to preview — all messages are empty.");
+    return;
+  }
+
+  const separator = `\n\n${"-".repeat(60)}\n\n`;
+  const text = rendered
+    .map((m) => `[${m.role}]\n${m.content}`)
+    .join(separator);
+
+  const win = window.open(
+    "",
+    "sandbox-preview",
+    "width=900,height=700,scrollbars=yes",
+  );
+  if (!win) {
+    showError("Preview window was blocked. Allow popups for this page.");
+    return;
+  }
+
+  // Static shell only — no user content goes through document.write().
+  win.document.open();
+  win.document.write(
+    "<!doctype html><html><head><title>Rendered messages</title></head><body></body></html>",
+  );
+  win.document.close();
+
+  const pre = win.document.createElement("pre");
+  pre.textContent = text;
+  pre.style.cssText =
+    "white-space: pre-wrap; word-break: break-word; margin: 0; padding: 1rem; " +
+    "font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;";
+  win.document.body.appendChild(pre);
+  win.focus();
+}
+
+previewButton.addEventListener("click", openPreviewWindow);
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -400,7 +625,17 @@ form.addEventListener("submit", async (event) => {
     localStorage.setItem(KEY_STORAGE_NAME, gatewayKey);
   }
 
-  const requestBody = buildInvokeRequest(model);
+  // No required/optional distinction: the sandbox cannot know the semantics of
+  // an arbitrary variable, so a deliberately blank value is legitimate and
+  // renders to an empty string.
+  let requestBody;
+  try {
+    requestBody = buildInvokeRequest(model);
+  } catch (err) {
+    showError(err.message);
+    return;
+  }
+
   if (requestBody.messages.length === 0) {
     showError("Add at least one non-empty message.");
     return;
@@ -440,6 +675,7 @@ form.addEventListener("submit", async (event) => {
 // ---- Initial render --------------------------------------------------------
 
 renderMessages();
+refreshVariablesPanel();
 renderHistory();
 renderCurrentResponse();
 showResultsColumnIfNeeded();

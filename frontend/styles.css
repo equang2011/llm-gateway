@@ -312,3 +312,68 @@ input[type="password"] {
   gap: 0.5rem;
   margin-top: 0.25rem;
 }
+
+/* ---- Prompt variables panel ---------------------------------------------- */
+
+.variables-panel {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.variables-panel summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Explicit flex stacking rather than relying on default inline/block flow,
+   which put labels beside their inputs and wrapped unpredictably. */
+.variables-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.var-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.variables-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.variables-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.variables-panel label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.variables-panel input,
+.variables-panel textarea {
+  width: 100%;
+  font: inherit;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.variables-panel textarea {
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
