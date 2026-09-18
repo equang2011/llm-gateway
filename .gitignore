@@ -20,3 +20,6 @@ conversations/
 context-*.txt
 *.jpg
 *.png
+
+
+gateway.db
