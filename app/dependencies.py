@@ -1,44 +1,62 @@
 import secrets
 
-from fastapi import Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from app.settings import Settings
+from app.database import get_db
+from app.db.models import GatewayApiKey
+from app.security.api_keys import hash_api_key
 
 
 def require_gateway_key(
     authorization: str | None = Header(default=None),
-) -> None:
-    settings = Settings()
-
-    expected = settings.gateway_api_key.get_secret_value()
-
+    db: Session = Depends(get_db),
+) -> GatewayApiKey:    
     if authorization is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
+            detail ={
                 "error": {
                     "code": "unauthorized",
-                    "message": "Missing gateway credentials.",
+                    "message": "Missing gateway credentials."
                 }
             },
         )
-
     prefix = "Bearer "
 
     if not authorization.startswith(prefix):
         raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "error": {
+                            "code": "unauthorized",
+                            "message": "Invalid gateway credentials.",
+                        }
+                    },
+                )
+
+    provided = authorization[len(prefix):]
+    key_hash = hash_api_key(provided)
+
+    statement = select(GatewayApiKey).where(
+        GatewayApiKey.key_hash == key_hash
+    )
+
+    record = db.scalar(statement)
+
+    if record is None:
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
-                "error": {
-                    "code": "unauthorized",
-                    "message": "Invalid gateway credentials.",
+                "error":{
+                "code": "unauthorized",
+                "message": "Invalid gateway credentials.",
                 }
             },
         )
 
-    provided = authorization[len(prefix) :]
-
-    if not secrets.compare_digest(provided, expected):
+    if not record.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
@@ -48,3 +66,4 @@ def require_gateway_key(
                 }
             },
         )
+    return record
