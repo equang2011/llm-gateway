@@ -1,21 +1,14 @@
-import pytest
-
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.app import app
 import app.app as app_module
-from app.database import Base, get_db
+from app.app import app
+from app.database import get_db
 from app.db.models import GatewayApiKey
-from app.providers.openrouter import invoke_openrouter
-from app.security.api_keys import generate_api_key, hash_api_key, get_key_prefix
+from app.security.api_keys import generate_api_key, get_key_prefix, hash_api_key
 
 DATABASE_URL = "sqlite://"
 
 client = TestClient(app_module.app)
-
 
 
 def test_db_can_store_api_key(test_db):

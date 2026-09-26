@@ -9,7 +9,7 @@ from app.providers.openrouter import (
     build_openrouter_payload,
     normalize_openrouter_response,
 )
-from app.security.api_keys import generate_api_key, hash_api_key, get_key_prefix
+from app.security.api_keys import generate_api_key, get_key_prefix, hash_api_key
 
 client = TestClient(app_module.app)
 

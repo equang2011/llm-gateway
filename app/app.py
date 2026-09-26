@@ -43,7 +43,9 @@ def invoke(
     gateway_status = 500
 
     try:
+        
         provider_result = invoke_openrouter(request)
+        
         response = normalize_openrouter_response(
             provider_result,
             requested_model=request.model,

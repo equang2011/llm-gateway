@@ -1,7 +1,6 @@
 import hashlib
 import secrets
 
-
 API_KEY_PREFIX = "gw_"
 KEY_DISPLAY_PREFIX_LENGTH = 12
 

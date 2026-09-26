@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-gateway_api_key = os.getenv("GATEWAY_API_KEY")
+gateway_api_key = os.getenv("LLM_GATEWAY_API_KEY")
 if not gateway_api_key:
     raise RuntimeError("Missing LLM gateway API key")
 

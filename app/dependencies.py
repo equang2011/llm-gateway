@@ -1,4 +1,4 @@
-import secrets
+from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
@@ -10,8 +10,8 @@ from app.security.api_keys import hash_api_key
 
 
 def require_gateway_key(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
+    db: Annotated[Session,Depends(get_db)],
+    authorization: Annotated[str | None, Header()] = None,
 ) -> GatewayApiKey:    
     if authorization is None:
         raise HTTPException(
