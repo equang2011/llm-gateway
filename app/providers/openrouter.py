@@ -25,11 +25,10 @@ def build_openrouter_payload(request: InvokeRequest) -> dict:
 
 
 def invoke_openrouter(request: InvokeRequest) -> dict:
-    
+
     settings = Settings()
- 
+
     payload = build_openrouter_payload(request)
-    
 
     headers = {
         "Authorization": f"Bearer {settings.openrouter_api_key.get_secret_value()}",

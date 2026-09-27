@@ -8,5 +8,3 @@ def test_api_key_hashing():
     assert raw_key.startswith("gw_")
     assert raw_key != key_hash
     assert hash_api_key(raw_key) == key_hash
-
-    

@@ -7,6 +7,7 @@ from app.database import Base
 
 DATABASE_URL = "sqlite://"
 
+
 @pytest.fixture
 def test_db():
     test_engine = create_engine(

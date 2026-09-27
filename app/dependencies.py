@@ -13,14 +13,14 @@ from app.security.api_keys import hash_api_key
 def require_gateway_key(
     db: Annotated[Session, Depends(get_db)],
     authorization: Annotated[str | None, Header()] = None,
-) -> GatewayApiKey:    
+) -> GatewayApiKey:
     if authorization is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail ={
+            detail={
                 "error": {
                     "code": "unauthorized",
-                    "message": "Missing gateway credentials."
+                    "message": "Missing gateway credentials.",
                 }
             },
         )
@@ -28,21 +28,19 @@ def require_gateway_key(
 
     if not authorization.startswith(prefix):
         raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={
-                        "error": {
-                            "code": "unauthorized",
-                            "message": "Invalid gateway credentials.",
-                        }
-                    },
-                )
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid gateway credentials.",
+                }
+            },
+        )
 
-    provided = authorization[len(prefix):]
+    provided = authorization[len(prefix) :]
     key_hash = hash_api_key(provided)
 
-    statement = select(GatewayApiKey).where(
-        GatewayApiKey.key_hash == key_hash
-    )
+    statement = select(GatewayApiKey).where(GatewayApiKey.key_hash == key_hash)
 
     record = db.scalar(statement)
 
@@ -50,9 +48,9 @@ def require_gateway_key(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
-                "error":{
-                "code": "unauthorized",
-                "message": "Invalid gateway credentials.",
+                "error": {
+                    "code": "unauthorized",
+                    "message": "Invalid gateway credentials.",
                 }
             },
         )
@@ -71,5 +69,4 @@ def require_gateway_key(
     record.last_used_at = datetime.now(timezone.utc)
     db.commit()
 
-    
     return record

@@ -8,6 +8,7 @@ take app name + rate limit
 → print raw key once
 
 """
+
 from app.database import SessionLocal
 from app.db.models import GatewayApiKey
 from app.security.api_keys import generate_api_key, hash_api_key
@@ -19,7 +20,6 @@ def main():
     try:
         raw_key = generate_api_key()
         key_hash = hash_api_key(raw_key)
-
 
         record = GatewayApiKey(
             app_name="adaptive-learning-app",
@@ -39,6 +39,7 @@ def main():
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     main()

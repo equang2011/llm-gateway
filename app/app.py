@@ -30,7 +30,10 @@ def health():
 @app.post("/invoke", response_model=InvokeResponse)
 def invoke(
     request: InvokeRequest,
-    api_key: Annotated[GatewayApiKey, Depends(require_gateway_key),]
+    api_key: Annotated[
+        GatewayApiKey,
+        Depends(require_gateway_key),
+    ],
 ) -> InvokeResponse:
 
     logger.info(
@@ -49,7 +52,7 @@ def invoke(
 
     try:
         provider_result = invoke_openrouter(request)
-        
+
         response = normalize_openrouter_response(
             provider_result,
             requested_model=request.model,

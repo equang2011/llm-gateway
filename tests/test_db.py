@@ -48,21 +48,22 @@ def test_unknown_api_key_returns_401(test_db):
     finally:
         app.dependency_overrides.clear()
 
+
 def test_valid_active_api_key(test_db, monkeypatch):
     """
-    generate raw key
-→ hash raw key
-→ insert GatewayApiKey(is_active=True)
-→ commit
+        generate raw key
+    → hash raw key
+    → insert GatewayApiKey(is_active=True)
+    → commit
 
-override get_db
-→ FastAPI now sees that row
+    override get_db
+    → FastAPI now sees that row
 
-monkeypatch provider
-→ successful auth doesn't hit OpenRouter
+    monkeypatch provider
+    → successful auth doesn't hit OpenRouter
 
-POST /invoke with raw key
-→ expect 200"""
+    POST /invoke with raw key
+    → expect 200"""
     raw_key = generate_api_key()
     record = GatewayApiKey(
         app_name="test-app",
@@ -82,22 +83,22 @@ POST /invoke with raw key
 
     def fake_invoke_openrouter(request):
         return {
-        "choices": [
-            {
-                "message": {
-                    "content": "Fake response",
-                },
-                "finish_reason": "stop",
-            }
-        ]
-    }
+            "choices": [
+                {
+                    "message": {
+                        "content": "Fake response",
+                    },
+                    "finish_reason": "stop",
+                }
+            ]
+        }
 
-    monkeypatch.setattr( 
+    monkeypatch.setattr(
         app_module,
         "invoke_openrouter",
         fake_invoke_openrouter,
     )
-    headers={
+    headers = {
         "Authorization": f"Bearer {raw_key}",
     }
 
@@ -115,7 +116,7 @@ POST /invoke with raw key
             },
             headers=headers,
         )
-        assert response.status_code==200
+        assert response.status_code == 200
         assert response.json() == {
             "model": "mock-1",
             "content": "Fake response",
@@ -142,11 +143,11 @@ def test_inactive_api_key_returns_401(test_db):
         yield test_db
 
     app_module.app.dependency_overrides[get_db] = override_get_db
-    headers={
-            "Authorization": f"Bearer {raw_key}",
-        }
+    headers = {
+        "Authorization": f"Bearer {raw_key}",
+    }
     try:
-        response=client.post(
+        response = client.post(
             "/invoke",
             json={
                 "model": "mock-1",
@@ -160,7 +161,7 @@ def test_inactive_api_key_returns_401(test_db):
             headers=headers,
         )
 
-        assert response.status_code==401
+        assert response.status_code == 401
         assert response.json() == {
             "detail": {
                 "error": {
@@ -197,23 +198,23 @@ def test_successful_auth_updates_last_used_at(test_db, monkeypatch):
 
     def fake_invoke_openrouter(request):
         return {
-        "choices": [
-            {
-                "message": {
-                    "content": "Fake response",
-                },
-                "finish_reason": "stop",
-            }
-        ]
-    }
-    
-    monkeypatch.setattr( 
+            "choices": [
+                {
+                    "message": {
+                        "content": "Fake response",
+                    },
+                    "finish_reason": "stop",
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
         app_module,
         "invoke_openrouter",
         fake_invoke_openrouter,
     )
 
-    headers={
+    headers = {
         "Authorization": f"Bearer {raw_key}",
     }
 
@@ -240,6 +241,7 @@ def test_successful_auth_updates_last_used_at(test_db, monkeypatch):
     finally:
         app_module.app.dependency_overrides.clear()
 
+
 def test_inactive_key_does_not_change_last_used_at(test_db):
     raw_key = generate_api_key()
 
@@ -260,7 +262,7 @@ def test_inactive_key_does_not_change_last_used_at(test_db):
 
     app_module.app.dependency_overrides[get_db] = override_get_db
 
-    headers={
+    headers = {
         "Authorization": f"Bearer {raw_key}",
     }
 
@@ -279,7 +281,7 @@ def test_inactive_key_does_not_change_last_used_at(test_db):
             headers=headers,
         )
 
-        assert response.status_code ==401
+        assert response.status_code == 401
         test_db.refresh(record)
         assert record.last_used_at is None
     finally:

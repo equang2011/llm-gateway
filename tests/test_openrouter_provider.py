@@ -85,7 +85,6 @@ def test_invoke(test_db, monkeypatch):
             ]
         }
 
-
     monkeypatch.setattr(app_module, "invoke_openrouter", fake_invoke_openrouter)
 
     try:
@@ -117,7 +116,7 @@ def test_invoke(test_db, monkeypatch):
 
 def test_invoke_returns_502_when_provider_errors(test_db, monkeypatch):
     raw_key = generate_api_key()
-    
+
     record = GatewayApiKey(
         app_name="test-app",
         key_hash=hash_api_key(raw_key),
@@ -133,7 +132,6 @@ def test_invoke_returns_502_when_provider_errors(test_db, monkeypatch):
         yield test_db
 
     app_module.app.dependency_overrides[get_db] = override_get_db
-    
 
     def fake_openrouter_provider(request):
         raise httpx.HTTPStatusError(
@@ -175,9 +173,10 @@ def test_invoke_returns_502_when_provider_errors(test_db, monkeypatch):
     finally:
         app_module.app.dependency_overrides.clear()
 
+
 def test_invoke_returns_504_when_provider_times_out(test_db, monkeypatch):
     raw_key = generate_api_key()
-    
+
     record = GatewayApiKey(
         app_name="test-app",
         key_hash=hash_api_key(raw_key),
@@ -193,7 +192,6 @@ def test_invoke_returns_504_when_provider_times_out(test_db, monkeypatch):
         yield test_db
 
     app_module.app.dependency_overrides[get_db] = override_get_db
-
 
     def fake_openrouter_timeout(request):
         raise httpx.TimeoutException(
