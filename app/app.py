@@ -1,11 +1,13 @@
 import logging
 import time
+from typing import Annotated
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
+from app.db.models import GatewayApiKey
 from app.dependencies import require_gateway_key
 from app.models import InvokeRequest, InvokeResponse
 from app.observability import log_invocation
@@ -28,11 +30,14 @@ def health():
 @app.post("/invoke", response_model=InvokeResponse)
 def invoke(
     request: InvokeRequest,
-    _: None = Depends(require_gateway_key),
+    api_key: Annotated[GatewayApiKey, Depends(require_gateway_key),]
 ) -> InvokeResponse:
 
     logger.info(
-        "invoke_started model=%s message_count=%s input_chars=%s",
+        "invoke_started app_name=%s api_key_id=%s model=%s "
+        "message_count=%s input_chars=%s",
+        api_key.app_name,
+        api_key.id,
         request.model,
         len(request.messages),
         sum(len(m.content) for m in request.messages),
@@ -43,7 +48,6 @@ def invoke(
     gateway_status = 500
 
     try:
-        
         provider_result = invoke_openrouter(request)
         
         response = normalize_openrouter_response(
@@ -101,6 +105,8 @@ def invoke(
             outcome=outcome,
             gateway_status=gateway_status,
             elapsed_ms=elapsed_time,
+            app_name=api_key.app_name,
+            api_key_id=api_key.id,
         )
 
     return response

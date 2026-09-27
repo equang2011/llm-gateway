@@ -30,7 +30,7 @@ def main():
     payload = {
         # Provider model ID. Becomes the gateway alias "deepseek-v4-flash"
         # once model_catalog.py is wired into the request path.
-        "model": "deepseek/deepseek-v4-flash",
+        "model": "deepseek/deepseek-v4.1-flash",
         "messages": [
             {
                 "role": "user",
