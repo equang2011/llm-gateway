@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
@@ -10,7 +11,7 @@ from app.security.api_keys import hash_api_key
 
 
 def require_gateway_key(
-    db: Annotated[Session,Depends(get_db)],
+    db: Annotated[Session, Depends(get_db)],
     authorization: Annotated[str | None, Header()] = None,
 ) -> GatewayApiKey:    
     if authorization is None:
@@ -66,4 +67,9 @@ def require_gateway_key(
                 }
             },
         )
+
+    record.last_used_at = datetime.now(timezone.utc)
+    db.commit()
+
+    
     return record
