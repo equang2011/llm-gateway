@@ -299,3 +299,164 @@ def test_invoke_with_wrong_bearer_token(test_db):
 
     finally:
         app_module.app.dependency_overrides.clear()
+
+
+def test_invoke_forbidden_model(test_db, monkeypatch):
+    raw_key = generate_api_key()
+
+    record = GatewayApiKey(
+        app_name="test-app",
+        key_hash=hash_api_key(raw_key),
+        key_prefix=get_key_prefix(raw_key),
+        is_active=True,
+        requests_per_minute=30,
+        allowed_models=["qwen-3.7-flash"],
+    )
+
+    test_db.add(record)
+    test_db.commit()
+
+    def override_get_db():
+        yield test_db
+
+    app_module.app.dependency_overrides[get_db] = override_get_db
+
+    def forbidden_provider_call(request):
+        raise AssertionError("Provider must not be called for a forbidden model")
+
+    monkeypatch.setattr(
+        app_module,
+        "invoke_openrouter",
+        forbidden_provider_call,
+    )
+
+    try:
+        response = client.post(
+            "/invoke",
+            json={
+                "model": "openai-gpt-6-luna",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Hello",
+                    }
+                ],
+            },
+            headers={
+                "Authorization": f"Bearer {raw_key}",
+            },
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"]["error"]["code"] == "model_forbidden"
+    finally:
+        app_module.app.dependency_overrides.clear()
+
+
+def test_invoke_allowed_model(test_db, monkeypatch):
+    raw_key = generate_api_key()
+
+    record = GatewayApiKey(
+        app_name="test-app",
+        key_hash=hash_api_key(raw_key),
+        key_prefix=get_key_prefix(raw_key),
+        is_active=True,
+        requests_per_minute=30,
+        allowed_models=["qwen-3.7-flash"],
+    )
+
+    test_db.add(record)
+    test_db.commit()
+
+    def override_get_db():
+        yield test_db
+
+    app_module.app.dependency_overrides[get_db] = override_get_db
+
+    def fake_invoke_openrouter(request):
+        return {
+            "choices": [
+                {
+                    "message": {"content": "Allowed response"},
+                    "finish_reason": "stop",
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        app_module,
+        "invoke_openrouter",
+        fake_invoke_openrouter,
+    )
+
+    try:
+        response = client.post(
+            "/invoke",
+            json={
+                "model": "qwen-3.7-flash",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Hello",
+                    }
+                ],
+            },
+            headers={
+                "Authorization": f"Bearer {raw_key}",
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["content"] == "Allowed response"
+        assert response.json()["model"] == "qwen-3.7-flash"
+    finally:
+        app_module.app.dependency_overrides.clear()
+
+
+def test_invoke_unsupported_model(test_db, monkeypatch):
+    raw_key = generate_api_key()
+
+    record = GatewayApiKey(
+        app_name="test-app",
+        key_hash=hash_api_key(raw_key),
+        key_prefix=get_key_prefix(raw_key),
+        is_active=True,
+        requests_per_minute=30,
+        allowed_models=None,
+    )
+
+    test_db.add(record)
+    test_db.commit()
+
+    def override_get_db():
+        yield test_db
+
+    app_module.app.dependency_overrides[get_db] = override_get_db
+
+    def forbidden_provider_call(request):
+        raise AssertionError("Provider must not be called for an unsupported model")
+
+    monkeypatch.setattr(
+        app_module,
+        "invoke_openrouter",
+        forbidden_provider_call,
+    )
+
+    try:
+        response = client.post(
+            "/invoke",
+            json={
+                "model": "qwen-30.7-flash",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Hello",
+                    }
+                ],
+            },
+            headers={
+                "Authorization": f"Bearer {raw_key}",
+            },
+        )
+        assert response.status_code == 400
+        assert response.json()["detail"]["error"]["code"] == "unsupported_model"
+    finally:
+        app_module.app.dependency_overrides.clear()
