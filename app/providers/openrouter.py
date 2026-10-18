@@ -3,6 +3,7 @@ import logging
 import httpx
 from pydantic import ValidationError
 
+from app.model_catalog import SUPPORTED_MODELS
 from app.models import InvokeRequest, InvokeResponse
 from app.settings import Settings
 
@@ -21,7 +22,10 @@ def build_openrouter_payload(request: InvokeRequest) -> dict:
             }
         )
 
-    return {"model": request.model, "messages": messages}
+    return {
+        "model": SUPPORTED_MODELS[request.model],
+        "messages": messages,
+    }
 
 
 def invoke_openrouter(request: InvokeRequest) -> dict:

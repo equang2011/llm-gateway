@@ -10,4 +10,5 @@ SUPPORTED_MODELS = {
     "gemma-4-31b-it": "google/gemma-4-31b-it",
     "z-ai-glm-5.3-flash": "z-ai/glm-5.3-flash",
     "openai-gpt-6-luna": "openai/gpt-6-luna",
+    "deepseek-v4.1-flash-1017": "deepseek/deepseek-v4.1-flash-1017",
 }

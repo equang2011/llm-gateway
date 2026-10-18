@@ -9,9 +9,11 @@ from pydantic import ValidationError
 
 from app.db.models import GatewayApiKey
 from app.dependencies import require_gateway_key
+from app.model_catalog import SUPPORTED_MODELS
 from app.models import InvokeRequest, InvokeResponse
 from app.observability import log_invocation
 from app.providers.openrouter import invoke_openrouter, normalize_openrouter_response
+from app.security.model_permissions import is_model_allowed
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,6 +53,35 @@ def invoke(
     gateway_status = 500
 
     try:
+        if request.model not in SUPPORTED_MODELS:
+            outcome = "unsupported_model"
+            gateway_status = 400
+
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": {
+                        "code": "unsupported_model",
+                        "message": "The requested model is"
+                        " not supported by this gateway.",
+                    }
+                },
+            )
+
+        if not is_model_allowed(request.model, api_key.allowed_models):
+            outcome = "model_forbidden"
+            gateway_status = 403
+
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": {
+                        "code": "model_forbidden",
+                        "message": "This API key cannot access the requested model.",
+                    }
+                },
+            )
+
         provider_result = invoke_openrouter(request)
 
         response = normalize_openrouter_response(

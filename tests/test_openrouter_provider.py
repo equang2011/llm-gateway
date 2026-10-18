@@ -16,7 +16,7 @@ client = TestClient(app_module.app)
 
 def test_build_openrouter_payload():
     request = InvokeRequest(
-        model="mock-1",
+        model="openai-gpt-6-luna",
         messages=[
             Message(role="system", content="Answer concisely."),
             Message(role="user", content="What is indemnification?"),
@@ -26,7 +26,7 @@ def test_build_openrouter_payload():
     payload = build_openrouter_payload(request)
 
     assert payload == {
-        "model": "mock-1",
+        "model": "openai/gpt-6-luna",
         "messages": [
             {"role": "system", "content": "Answer concisely."},
             {"role": "user", "content": "What is indemnification?"},
@@ -91,7 +91,7 @@ def test_invoke(test_db, monkeypatch):
         response = client.post(
             "/invoke",
             json={
-                "model": "mock-1",
+                "model": "openai-gpt-6-luna",
                 "messages": [
                     {
                         "role": "user",
@@ -106,7 +106,7 @@ def test_invoke(test_db, monkeypatch):
 
         assert response.status_code == 200
         assert response.json() == {
-            "model": "mock-1",
+            "model": "openai-gpt-6-luna",
             "content": "Fake response",
             "finish_reason": "stop",
         }
@@ -148,7 +148,7 @@ def test_invoke_returns_502_when_provider_errors(test_db, monkeypatch):
         response = client.post(
             "/invoke",
             json={
-                "model": "fake-provider",
+                "model": "openai-gpt-6-luna",
                 "messages": [
                     {
                         "role": "user",
@@ -204,7 +204,7 @@ def test_invoke_returns_504_when_provider_times_out(test_db, monkeypatch):
         response = client.post(
             "/invoke",
             json={
-                "model": "mock-1",
+                "model": "openai-gpt-6-luna",
                 "messages": [
                     {
                         "role": "user",

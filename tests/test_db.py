@@ -106,7 +106,7 @@ def test_valid_active_api_key(test_db, monkeypatch):
         response = client.post(
             "/invoke",
             json={
-                "model": "mock-1",
+                "model": "openai-gpt-6-luna",
                 "messages": [
                     {
                         "role": "user",
@@ -118,7 +118,7 @@ def test_valid_active_api_key(test_db, monkeypatch):
         )
         assert response.status_code == 200
         assert response.json() == {
-            "model": "mock-1",
+            "model": "openai-gpt-6-luna",
             "content": "Fake response",
             "finish_reason": "stop",
         }
@@ -222,7 +222,7 @@ def test_successful_auth_updates_last_used_at(test_db, monkeypatch):
         response = client.post(
             "/invoke",
             json={
-                "model": "mock-1",
+                "model": "openai-gpt-6-luna",
                 "messages": [
                     {
                         "role": "user",
@@ -270,7 +270,7 @@ def test_inactive_key_does_not_change_last_used_at(test_db):
         response = client.post(
             "/invoke",
             json={
-                "model": "mock-1",
+                "model": "openai-gpt-6-luna",
                 "messages": [
                     {
                         "role": "user",
