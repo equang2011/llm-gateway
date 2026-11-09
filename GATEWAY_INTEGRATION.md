@@ -64,7 +64,7 @@ error envelope described below, before any provider call is made.
   not a raw provider ID. The gateway maps the alias to the provider model
   internally. Raw provider IDs such as `deepseek/deepseek-v4.1-flash` are
   rejected with `400 unsupported_model`. The set of aliases is defined in
-  `app/model_catalog.py` and **will change over time** — ask the gateway owner
+  `app/model_catalog.py` and **will change over time** — call `GET /models` to see
   which aliases your key may use rather than hardcoding the full list.
 - `messages` — **required.** Ordered list of `{role, content}`. `role` is one
   of `"system"`, `"user"`, `"assistant"`.
@@ -86,13 +86,32 @@ use, ask the gateway owner to update the key — don't work around it.
 {
   "model": "deepseek-v4.1-flash",
   "content": "...",
-  "finish_reason": "stop"
+  "finish_reason": "stop",
+  "provider_model": "deepseek/deepseek-v4.1-flash"
 }
 ```
 
 `model` echoes back the alias you sent. `content` is the model's text output.
 `finish_reason` is passed through from the provider (e.g. `"stop"`,
-`"length"`).
+`"length"`). `provider_model` is the underlying model that served the call, as
+reported by the provider (it falls back to the gateway's mapping if the provider
+omits it). Store it if you need to know exactly which model produced an output.
+
+### Listing your models: `GET /models`
+
+Requires the same `Authorization` header as `/invoke`. Returns only the aliases
+your key may use right now:
+
+```json
+{
+  "models": [
+    { "alias": "deepseek-v4.1-flash", "provider_model": "deepseek/deepseek-v4.1-flash" }
+  ]
+}
+```
+
+Being listed means the gateway will accept the alias. It does not prove the
+provider is currently serving that model.
 
 ### Error responses
 

@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from app.db.models import GatewayApiKey
 from app.dependencies import require_gateway_key
 from app.model_catalog import SUPPORTED_MODELS
-from app.models import InvokeRequest, InvokeResponse
+from app.models import InvokeRequest, InvokeResponse, ModelInfo, ModelsResponse
 from app.observability import log_invocation
 from app.providers.openrouter import invoke_openrouter, normalize_openrouter_response
 from app.security.model_permissions import is_model_allowed
@@ -27,6 +27,24 @@ app = FastAPI()
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/models", response_model=ModelsResponse)
+def list_models(
+    api_key: Annotated[
+        GatewayApiKey,
+        Depends(require_gateway_key),
+    ],
+) -> ModelsResponse:
+    # Walk the catalog, not the allowlist, so a stale allowlist entry is never
+    # advertised as usable. is_model_allowed keeps this in step with /invoke.
+    return ModelsResponse(
+        models=[
+            ModelInfo(alias=alias, provider_model=provider_model)
+            for alias, provider_model in SUPPORTED_MODELS.items()
+            if is_model_allowed(alias, api_key.allowed_models)
+        ]
+    )
 
 
 @app.post("/invoke", response_model=InvokeResponse)

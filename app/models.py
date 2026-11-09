@@ -17,3 +17,13 @@ class InvokeResponse(BaseModel):
     model: str
     content: str
     finish_reason: str
+    provider_model: str
+
+
+class ModelInfo(BaseModel):
+    alias: str
+    provider_model: str
+
+
+class ModelsResponse(BaseModel):
+    models: list[ModelInfo]

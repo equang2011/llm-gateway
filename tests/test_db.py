@@ -120,6 +120,7 @@ def test_valid_active_api_key(test_db, monkeypatch):
         assert response.json() == {
             "model": "openai-gpt-6-luna",
             "content": "Fake response",
+            "provider_model": "openai/gpt-6-luna",
             "finish_reason": "stop",
         }
     finally:

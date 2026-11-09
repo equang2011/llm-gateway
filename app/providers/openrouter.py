@@ -68,6 +68,9 @@ def normalize_openrouter_response(
             model=requested_model,
             content=choices["message"]["content"],
             finish_reason=choices["finish_reason"],
+            # Prefer what OpenRouter says served the call; the catalog value is
+            # only what we asked for.
+            provider_model=result.get("model") or SUPPORTED_MODELS[requested_model],
         )
 
     except (KeyError, ValidationError, IndexError):

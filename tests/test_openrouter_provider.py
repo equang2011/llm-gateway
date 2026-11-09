@@ -48,10 +48,11 @@ def test_normalize_openrouter_response():
 
     response = normalize_openrouter_response(
         provider_result,
-        requested_model="qwen/qwen3.7-flash",
+        requested_model="qwen-3.7-flash",
     )
 
-    assert response.model == "qwen/qwen3.7-flash"
+    assert response.model == "qwen-3.7-flash"
+    assert response.provider_model == "qwen/qwen3.7-flash"
     assert response.content == "Honey never spoils."
     assert response.finish_reason == "stop"
 
@@ -108,6 +109,7 @@ def test_invoke(test_db, monkeypatch):
         assert response.json() == {
             "model": "openai-gpt-6-luna",
             "content": "Fake response",
+            "provider_model": "openai/gpt-6-luna",
             "finish_reason": "stop",
         }
     finally:
