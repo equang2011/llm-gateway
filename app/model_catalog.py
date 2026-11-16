@@ -12,4 +12,5 @@ SUPPORTED_MODELS = {
     "openai-gpt-6-luna": "openai/gpt-6-luna",
     "deepseek-v4.1-flash-1017": "deepseek/deepseek-v4.1-flash-1017",
     "typesafe-jev-1.13": "typesafe/jev-1.13",
+    "qwen-3.8-27b": "qwen/qwen3.8-27b",
 }
